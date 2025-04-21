@@ -89,7 +89,11 @@ async def _download_media(
 )
 @click.argument("start_time")
 @click.argument("end_time")
-@click.argument("output_path")
+@click.option(
+    "--output-path",
+    default=None,
+    help="Output file path. If not specified, it's generated from start_time (e.g., YYYY-MM-DD_HH-mm-ss.mp4)",
+)
 @click.option("--api-token", required=True, help="Safie API token", envvar="SAFIE_TOKEN")
 @click.option(
     "--base-url",
@@ -107,7 +111,7 @@ def main(
     name: Optional[str],
     start_time: str,
     end_time: str,
-    output_path: str,
+    output_path: Optional[str],
     api_token: str,
     base_url: Optional[str],
     timezone_str: str,
@@ -116,7 +120,6 @@ def main(
 
     START_TIME: Start time (ISO8601 format, e.g. 2024-03-22T10:00:00 or 2024-03-22T10:00:00+09:00)
     END_TIME: End time (ISO8601 format, e.g. 2024-03-22T11:00:00 or 2024-03-22T11:00:00+09:00)
-    OUTPUT_PATH: Output file path
 
     Times with 'Z' suffix (e.g. 2024-03-22T10:00:00Z) are treated as UTC.
     Times with explicit offset (e.g. 2024-03-22T10:00:00+09:00) use that timezone.
@@ -131,6 +134,10 @@ def main(
         default_tz = gettz(timezone_str)
         start = _parse_time_string(start_time, default_tz)
         end = _parse_time_string(end_time, default_tz)
+
+        # Generate output_path from start_time if not specified
+        if output_path is None:
+            output_path = start.strftime("%Y-%m-%d_%H-%M-%S") + ".mp4"
 
         # Run the async download process with a single asyncio.run call
         asyncio.run(
