@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "safie-mediafile"
+version = "0.1.1"
+authors = [
+  { name="Example Author", email="author@example.com" },
+]
+description = "A Python library and command-line tool for downloading media files from Safie cameras"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "httpx>=0.24.0",
+]
+
+[project.optional-dependencies]
+cli = [
+    "click>=8.0.0",
+    "python-dateutil>=2.9.0.post0",
+]
+dev = [
+    "mypy>=1.9.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.3.0",
+    "types-python-dateutil>=2.9.0.20241206",
+]
+
+[project.urls]
+Homepage = "https://github.com/example/safie-mediafile"
+Issues = "https://github.com/example/safie-mediafile/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["safie_mediafile"]
+
+[project.scripts]
+safie-mediafile = "safie_mediafile._cli:main"
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
