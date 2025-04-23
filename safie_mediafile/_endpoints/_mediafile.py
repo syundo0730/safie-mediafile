@@ -40,6 +40,16 @@ class MediaFileAPI:
         result = response.json()
         return result["request_id"]
 
+    async def list_mediafile_requests(self, device_id: str) -> list:
+        """
+        List all media file requests for a device
+
+        Args:
+            device_id: Device ID
+        """
+        response = await self._client.get(f"/v2/devices/{device_id}/media_files/requests")
+        return response.json()["list"]
+
     async def delete_mediafile_request(self, device_id: str, request_id: str) -> None:
         """
         Delete a media file request
