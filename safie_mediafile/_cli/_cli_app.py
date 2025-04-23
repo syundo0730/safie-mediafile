@@ -12,6 +12,8 @@ from safie_mediafile import (
     SAFIE_API_BASE_URL,
 )
 
+from ._downloader import download_media_from_device
+
 
 def _parse_time_string(time_string: str, default_tz: Optional[tzinfo]) -> datetime:
     """Parse time string with timezone handling.
@@ -40,40 +42,6 @@ def _parse_time_string(time_string: str, default_tz: Optional[tzinfo]) -> dateti
             return datetime.fromisoformat(time_string)
         # Try other formats or raise error
         raise ValueError(f"Invalid time format: {time_string}") from e
-
-
-async def _download_media(
-    serial: Optional[str],
-    name: Optional[str],
-    start_time: datetime,
-    end_time: datetime,
-    output_path: str,
-    api_token: str,
-    base_url: Optional[str],
-):
-    """Process the device ID lookup and media file download in a single async function."""
-    # Get device ID
-    device_id = await find_device_id(
-        api_token=api_token, serial=serial, name=name, base_url=base_url
-    )
-
-    # Create and download media file
-    try:
-        filepath = Path(output_path)
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-        with open(filepath, "wb") as f:
-            await create_and_download_mediafile(
-                device_id=device_id,
-                start_time=start_time,
-                end_time=end_time,
-                file=f,
-                api_token=api_token,
-                base_url=base_url,
-            )
-    except Exception as e:
-        filepath.unlink(missing_ok=True)
-        click.echo(f"An error occurred: {e}", err=True)
-        raise e
 
 
 @click.command()
@@ -138,10 +106,11 @@ def main(
         # Generate output_path from start_time if not specified
         if output_path is None:
             output_path = start.strftime("%Y-%m-%d_%H-%M-%S") + ".mp4"
+        output_path = Path(output_path)
 
         # Run the async download process with a single asyncio.run call
         asyncio.run(
-            _download_media(
+            download_media_from_device(
                 serial=serial,
                 name=name,
                 start_time=start,
