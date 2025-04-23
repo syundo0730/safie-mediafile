@@ -36,7 +36,16 @@ async def create_and_download_mediafile(
         print(f"Mediafile request ID: {request_id}")
         download_url = await mediafile_api.wait_for_mediafile_ready(device_id, request_id)
         print(f"Downloading mediafile from {download_url}")
-        await mediafile_api.download_mediafile(download_url, file)
+
+        download_success = False
+        try:
+            await mediafile_api.download_mediafile(download_url, file)
+            download_success = True
+        finally:
+            # Only delete the request if download was successful
+            if download_success:
+                print(f"Download completed successfully, deleting request {request_id}")
+                await mediafile_api.delete_mediafile_request(device_id, request_id)
 
 
 async def find_device_id(
