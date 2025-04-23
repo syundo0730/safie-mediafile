@@ -48,9 +48,7 @@ class MediaFileAPI:
             device_id: Device ID
             request_id: Request ID
         """
-        await self._client.delete(
-            f"/v2/devices/{device_id}/media_files/requests/{request_id}"
-        )
+        await self._client.delete(f"/v2/devices/{device_id}/media_files/requests/{request_id}")
 
     async def get_mediafile_status(self, device_id: str, request_id: str) -> dict:
         """
