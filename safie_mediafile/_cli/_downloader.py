@@ -203,7 +203,7 @@ def _merge_segments(segment_files: List[Path], output_path: Path) -> None:
 
     # If only one segment, just copy it
     if len(segment_files) == 1:
-        shutil.move(segment_files[0], output_path)
+        shutil.move(str(segment_files[0]), str(output_path))
         return
 
     # Create a file list for ffmpeg
