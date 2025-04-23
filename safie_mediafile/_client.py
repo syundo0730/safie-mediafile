@@ -60,6 +60,23 @@ class SafieClient:
         response.raise_for_status()
         return response
 
+    async def delete(self, path: str, **kwargs) -> httpx.Response:
+        """
+        Send DELETE request
+
+        Args:
+            path: API path
+            **kwargs: Request parameters
+
+        Returns:
+            httpx.Response: Response
+        """
+        url = f"{self._base_url}{path}"
+        response = await self._client.delete(url, headers=self._headers, **kwargs)
+        print(f"delete response: {response.status_code}")
+        response.raise_for_status()
+        return response
+
     async def sync_stream(self, url: str, **kwargs) -> AsyncGenerator[bytes, None]:
         """
         Send streaming request
