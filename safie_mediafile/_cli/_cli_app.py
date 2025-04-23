@@ -6,11 +6,7 @@ from typing import Optional
 
 import click
 
-from safie_mediafile import (
-    create_and_download_mediafile,
-    find_device_id,
-    SAFIE_API_BASE_URL,
-)
+from safie_mediafile import SAFIE_API_BASE_URL
 
 from ._downloader import download_media_from_device
 
@@ -69,7 +65,8 @@ def _parse_time_string(time_string: str, default_tz: Optional[tzinfo]) -> dateti
     help="Base URL for Safie API. Default: " + SAFIE_API_BASE_URL,
 )
 @click.option(
-    "--timezone", "timezone_str",
+    "--timezone",
+    "timezone_str",
     default=None,
     help="Timezone for interpreting times with timezone info (e.g. UTC, Asia/Tokyo, JST, etc.)."
     "If not specified, it will be inferred from time string or the local time.",

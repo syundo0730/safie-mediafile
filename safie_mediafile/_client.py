@@ -2,7 +2,6 @@ from typing import AsyncGenerator, Optional
 import httpx
 from contextlib import asynccontextmanager
 
-from safie_mediafile._exceptions import SafieAPIError
 
 SAFIE_API_BASE_URL = "https://openapi.safie.link"
 
