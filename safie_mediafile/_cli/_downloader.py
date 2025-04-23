@@ -1,14 +1,19 @@
-from typing import Optional
+import tempfile
+from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 from pathlib import Path
 import subprocess
 import os
 import shutil
+import asyncio
 
 from safie_mediafile import (
     create_and_download_mediafile,
     find_device_id,
 )
+
+_MIN_DURATION = timedelta(minutes=1)
+_MAX_DURATION = timedelta(minutes=10)
 
 
 async def download_media_from_device(
@@ -21,17 +26,74 @@ async def download_media_from_device(
     base_url: Optional[str],
 ):
     """Download media from a device with clipping if necessary."""
-    await _download_with_clipping(
-        serial, name, start_time, end_time, output_path, api_token, base_url
+    # Get device ID
+    device_id = await find_device_id(
+        api_token=api_token, serial=serial, name=name, base_url=base_url
     )
 
+    segments = _create_time_segments(start_time, end_time, _MAX_DURATION)
+    if len(segments) > 1:
+        print(
+            f"Requested duration ({end_time - start_time}) is longer than 10 minutes. "
+            f"Will download {len(segments)} segments and merge them afterwards."
+        )
 
-_MIN_DURATION = timedelta(minutes=1)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        segments_paths = await _download_segments(
+            device_id, segments, output_path.name, Path(temp_dir), api_token, base_url
+        )
+        _merge_segments(segments_paths, output_path)
+
+
+def _create_time_segments(
+    start_time: datetime, end_time: datetime, segment_duration: timedelta
+) -> List[Tuple[datetime, datetime]]:
+    """
+    Create a list of time segments based on start and end times
+
+    Args:
+        start_time: Start time
+        end_time: End time
+        segment_duration: Maximum duration of each segment in minutes
+
+    Returns:
+        List of (segment_start, segment_end) tuples
+    """
+    segments = []
+    current_start = start_time
+    while current_start < end_time:
+        segment_end = min(current_start + segment_duration, end_time)
+        segments.append((current_start, segment_end))
+        current_start = segment_end
+    return segments
+
+
+async def _download_segments(
+    device_id: str,
+    segments: List[Tuple[datetime, datetime]],
+    output_file_name: str,
+    temp_dir: Path,
+    api_token: str,
+    base_url: Optional[str],
+) -> List[Path]:
+    """Download segments from a device."""
+    segments_paths = []
+    tasks = []
+    for i, (start_time, end_time) in enumerate(segments):
+        temp_output_path = temp_dir / f"{i}_{output_file_name}"
+        segments_paths.append(temp_output_path)
+        task = asyncio.create_task(
+            _download_with_clipping(
+                device_id, start_time, end_time, temp_output_path, api_token, base_url
+            )
+        )
+        tasks.append(task)
+    await asyncio.gather(*tasks)
+    return segments_paths
 
 
 async def _download_with_clipping(
-    serial: Optional[str],
-    name: Optional[str],
+    device_id: str,
     start_time: datetime,
     end_time: datetime,
     output_path: Path,
@@ -53,7 +115,7 @@ async def _download_with_clipping(
         adjusted_end_time = end_time
 
     await _download_media(
-        serial, name, start_time, adjusted_end_time, output_path, api_token, base_url
+        device_id, start_time, adjusted_end_time, output_path, api_token, base_url
     )
 
     if needs_clipping:
@@ -101,8 +163,7 @@ async def _download_with_clipping(
 
 
 async def _download_media(
-    serial: Optional[str],
-    name: Optional[str],
+    device_id: str,
     start_time: datetime,
     end_time: datetime,
     output_path: Path,
@@ -110,12 +171,6 @@ async def _download_media(
     base_url: Optional[str],
 ):
     """Process the device ID lookup and media file download in a single async function."""
-    # Get device ID
-    device_id = await find_device_id(
-        api_token=api_token, serial=serial, name=name, base_url=base_url
-    )
-
-    # Create and download media file
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "wb") as f:
@@ -130,3 +185,61 @@ async def _download_media(
     except Exception as e:
         output_path.unlink(missing_ok=True)
         raise e
+
+
+def _merge_segments(segment_files: List[Path], output_path: Path) -> None:
+    """
+    Merge video segments using ffmpeg
+
+    Args:
+        segment_files: List of segment file paths
+        output_path: Path to save the merged output file
+
+    Raises:
+        SafieMediaFileError: If merging fails
+    """
+    if not segment_files:
+        raise RuntimeError("No segments to merge")
+
+    # If only one segment, just copy it
+    if len(segment_files) == 1:
+        shutil.move(str(segment_files[0]), str(output_path))
+        return
+
+    # Create a file list for ffmpeg
+    filelist_path = os.path.join(os.path.dirname(segment_files[0]), "filelist.txt")
+    with open(filelist_path, "w") as f:
+        for segment_file in segment_files:
+            f.write(f"file '{segment_file}'\n")
+
+    try:
+        # Merge segments using ffmpeg
+        cmd = [
+            "ffmpeg",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(filelist_path),
+            "-c",
+            "copy",
+            "-y",
+            str(output_path),
+        ]
+        # Run ffmpeg command
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        print(f"Successfully merged {len(segment_files)} segments into {output_path}")
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Failed to merge segments: {e.stderr.decode() if e.stderr else str(e)}"
+        ) from e
+
+    finally:
+        # Clean up the file list
+        if os.path.exists(filelist_path):
+            try:
+                os.remove(filelist_path)
+            except Exception:
+                pass

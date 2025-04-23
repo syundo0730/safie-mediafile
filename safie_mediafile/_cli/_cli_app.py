@@ -103,7 +103,6 @@ def main(
         # Generate output_path from start_time if not specified
         if output_path is None:
             output_path = start.strftime("%Y-%m-%d_%H-%M-%S") + ".mp4"
-        output_path = Path(output_path)
 
         # Run the async download process with a single asyncio.run call
         asyncio.run(
@@ -112,7 +111,7 @@ def main(
                 name=name,
                 start_time=start,
                 end_time=end,
-                output_path=output_path,
+                output_path=Path(output_path),
                 api_token=api_token,
                 base_url=base_url,
             )
