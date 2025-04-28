@@ -7,6 +7,8 @@ import os
 import shutil
 import asyncio
 
+from imageio_ffmpeg import get_ffmpeg_exe  # type: ignore[import-untyped]
+
 from safie_mediafile import (
     create_and_download_mediafile,
     find_device_id,
@@ -14,6 +16,7 @@ from safie_mediafile import (
 
 _MIN_DURATION = timedelta(minutes=1)
 _MAX_DURATION = timedelta(minutes=10)
+_FFMPEG = get_ffmpeg_exe()
 
 
 async def download_media_from_device(
@@ -129,7 +132,7 @@ async def _download_with_clipping(
 
             # ffmpeg command
             cmd = [
-                "ffmpeg",
+                _FFMPEG,
                 "-i",
                 str(output_path),
                 "-ss",
@@ -215,7 +218,7 @@ def _merge_segments(segment_files: List[Path], output_path: Path) -> None:
     try:
         # Merge segments using ffmpeg
         cmd = [
-            "ffmpeg",
+            _FFMPEG,
             "-f",
             "concat",
             "-safe",
