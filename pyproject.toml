@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "safie-mediafile"
-version = "0.1.4"
+version = "0.1.5"
 authors = [
   { name="Example Author", email="author@example.com" },
 ]
@@ -24,6 +24,7 @@ dependencies = [
 cli = [
     "click>=8.0.0",
     "python-dateutil>=2.9.0.post0",
+    "imageio-ffmpeg>=0.5.1",
 ]
 dev = [
     "mypy>=1.9.0",
