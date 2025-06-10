@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-import asyncio
+import anyio
 from typing import BinaryIO
 
 from safie_mediafile._client import SafieClient
@@ -127,6 +127,6 @@ class MediaFileAPI:
                     f"Media file generation failed: {status.get('error', 'Unknown error')}"
                 )
 
-            await asyncio.sleep(interval)
+            await anyio.sleep(interval)
 
         raise SafieMediaFileTimeoutError(f"Media file generation timed out: {request_id}")

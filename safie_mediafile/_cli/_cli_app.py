@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 from datetime import datetime, tzinfo
 from dateutil.tz import gettz
 from pathlib import Path
@@ -104,9 +104,9 @@ def main(
         if output_path is None:
             output_path = start.strftime("%Y-%m-%d_%H-%M-%S") + ".mp4"
 
-        # Run the async download process with a single asyncio.run call
-        asyncio.run(
-            download_media_from_device(
+        # Run the async download process with anyio.run (defaults to asyncio backend)
+        async def _run():
+            await download_media_from_device(
                 serial=serial,
                 name=name,
                 start_time=start,
@@ -115,7 +115,8 @@ def main(
                 api_token=api_token,
                 base_url=base_url,
             )
-        )
+
+        anyio.run(_run)
 
         click.echo(f"Media file download completed: {output_path}")
 

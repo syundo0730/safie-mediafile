@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import os
 import shutil
-import asyncio
+import anyio
 
 from imageio_ffmpeg import get_ffmpeg_exe  # type: ignore[import-untyped]
 
@@ -79,19 +79,23 @@ async def _download_segments(
     api_token: str,
     base_url: Optional[str],
 ) -> List[Path]:
-    """Download segments from a device."""
+    """Download segments from a device using anyio TaskGroup."""
     segments_paths = []
-    tasks = []
-    for i, (start_time, end_time) in enumerate(segments):
-        temp_output_path = temp_dir / f"{i}_{output_file_name}"
-        segments_paths.append(temp_output_path)
-        task = asyncio.create_task(
-            _download_with_clipping(
-                device_id, start_time, end_time, temp_output_path, api_token, base_url
+
+    async with anyio.create_task_group() as tg:
+        for i, (start_time, end_time) in enumerate(segments):
+            temp_output_path = temp_dir / f"{i}_{output_file_name}"
+            segments_paths.append(temp_output_path)
+            tg.start_soon(
+                _download_with_clipping,
+                device_id,
+                start_time,
+                end_time,
+                temp_output_path,
+                api_token,
+                base_url,
             )
-        )
-        tasks.append(task)
-    await asyncio.gather(*tasks)
+
     return segments_paths
 
 
