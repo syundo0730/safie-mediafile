@@ -20,4 +20,4 @@ if __name__ == "__main__":
     parser.add_argument("--serial", type=str, required=True)
     parser.add_argument("--api-token", type=str, required=True)
     args = parser.parse_args()
-    asyncio.run(main(args))
+    anyio.run(main(args))
