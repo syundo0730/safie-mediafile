@@ -26,8 +26,7 @@ class DeviceAPI:
             Dict[str, Any]: Device list information
         """
         params = {"offset": offset, "limit": limit}
-        response = await self._client.get("/v2/devices", params=params)
-        return response.json()
+        return await self._client.get("/v2/devices", params=params)
 
     async def find_device_by_serial(self, serial: str) -> Optional[str]:
         """
