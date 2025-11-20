@@ -34,10 +34,9 @@ class MediaFileAPI:
             "start": start_time.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "end": end_time.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         }
-        response = await self._client.post(
+        result = await self._client.post(
             f"/v2/devices/{device_id}/media_files/requests", json=data
         )
-        result = response.json()
         return result["request_id"]
 
     async def list_mediafile_requests(self, device_id: str) -> list:
@@ -48,7 +47,7 @@ class MediaFileAPI:
             device_id: Device ID
         """
         response = await self._client.get(f"/v2/devices/{device_id}/media_files/requests")
-        return response.json()["list"]
+        return response["list"]
 
     async def delete_mediafile_request(self, device_id: str, request_id: str) -> None:
         """
@@ -71,10 +70,9 @@ class MediaFileAPI:
         Returns:
             dict: Media file status information
         """
-        response = await self._client.get(
+        return await self._client.get(
             f"/v2/devices/{device_id}/media_files/requests/{request_id}"
         )
-        return response.json()
 
     async def download_mediafile(self, url: str, file: BinaryIO):
         """
